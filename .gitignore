@@ -1,0 +1,21 @@
+# Generated outputs (regenerate locally; do not commit)
+figures/output/
+figures/data/*.csv
+tables/data/*.csv
+tables/*.json
+tables/verification_report.txt
+**/__pycache__/
+*.pyc
+.DS_Store
+
+# Rendered documents are not part of this repository
+*.docx
+*.pdf
+
+# Local population export (large GENESIS file); keep out of version control by default
+12411-0005_de_flat_more-years.csv
+
+# Run reports and intermediate outputs (regenerate locally)
+**/validation_report.txt
+reconciliation/reconciliation_report.csv
+reconciliation/reconciliation_summary.md

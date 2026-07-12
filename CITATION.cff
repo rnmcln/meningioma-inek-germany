@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+title: "National inpatient activity for cranial meningioma in Germany, 2019–2024: analysis code and reproducibility materials"
+type: software
+authors:
+  - family-names: "Lawson McLean"
+    given-names: "Aaron"
+    orcid: "https://orcid.org/0000-0001-5528-6905"
+  - family-names: "Kahr"
+    given-names: "Julian"
+  - family-names: "Neumeister"
+    given-names: "Anne"
+  - family-names: "Jungk"
+    given-names: "Christine"
+  - family-names: "Kamp"
+    given-names: "Marcel A."
+  - family-names: "Senft"
+    given-names: "Christian"
+license: MIT
+keywords:
+  - meningioma
+  - administrative data
+  - hospital discharge
+  - age-standardized rate
+  - neurosurgery
+  - Germany
+repository-code: "https://github.com/<your-username>/meningioma-inek-germany"

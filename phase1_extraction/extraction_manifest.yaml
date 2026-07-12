@@ -1,0 +1,270 @@
+# =====================================================================
+# Meningioma InEK study — machine-readable extraction manifest
+# Derived from Study Protocol v2.0, Appendices A and B.
+# This file is the single source of truth for Phase 1 (InEK DatenBrowser)
+# and the code definitions reused in Phase 2 (Destatis/GBE).
+# Consumed by build_query_grid.py, which validates codes against the local
+# ICD-10-GM and OPS catalogues and emits inek_query_grid.csv.
+# =====================================================================
+
+manifest_version: "1.0.0"
+protocol_version: "2.0"
+study_id: "meningioma_inek"
+generated: "2026-07-10"
+maintainer: "Aaron Lawson McLean"
+notes: >
+  Behaviour categories (D32/D42/C70) are administrative recording categories,
+  not WHO-grade proxies. No grade-resolved claim is made. The unit of analysis
+  is the discharge episode. Aggregate cells below the anonymisation threshold
+  (reported as fewer than five cases) are suppressed at source.
+
+# ---------------------------------------------------------------------
+# 1. ICD-10-GM phenotypes (Appendix A)
+# ---------------------------------------------------------------------
+icd_catalogue_ref: "icd10gm2026syst-claml/Klassifikationsdateien/icd10gm2026syst_claml_20250912.xml"
+icd_phenotypes:
+  - code: "D32.0"
+    label_en: "Benign neoplasm of cranial meninges"
+    label_de: "Gutartige Neubildung der Meningen: Hirnhäute"
+    behaviour: "benign"
+    site: "cranial"
+    predominant_entity: "meningioma"
+    role: "primary"
+  - code: "D32.1"
+    label_en: "Benign neoplasm of spinal meninges"
+    label_de: "Gutartige Neubildung der Meningen: Rückenmarkhäute"
+    behaviour: "benign"
+    site: "spinal"
+    predominant_entity: "spinal meningioma"
+    role: "spinal_sensitivity"
+  - code: "D32.9"
+    label_en: "Benign neoplasm of meninges, unspecified"
+    label_de: "Gutartige Neubildung der Meningen: Meningen, n.n.bez."
+    behaviour: "benign"
+    site: "unspecified"
+    predominant_entity: "meningioma (site unspecified)"
+    role: "broad_sensitivity"
+  - code: "D42.0"
+    label_en: "Neoplasm of uncertain behaviour, cranial meninges"
+    label_de: "Neubildung unsicheren/unbekannten Verhaltens der Meningen: Hirnhäute"
+    behaviour: "uncertain"
+    site: "cranial"
+    predominant_entity: "mixed; not a grade proxy"
+    role: "exploratory_behaviour"
+  - code: "C70.0"
+    label_en: "Malignant neoplasm of cranial meninges"
+    label_de: "Bösartige Neubildung der Meningen: Hirnhäute"
+    behaviour: "malignant"
+    site: "cranial"
+    predominant_entity: "mixed; may include non-meningioma meningeal malignancy"
+    role: "exploratory_behaviour"
+
+# Named ICD cohort sets (values are lists of icd_phenotypes.code)
+icd_cohorts:
+  primary_epidemiological: ["D32.0"]
+  broad_sensitivity:       ["D32.0", "D32.1", "D32.9"]   # equals three-digit D32
+  spinal:                  ["D32.1"]
+  exploratory_D42:         ["D42.0"]
+  exploratory_C70:         ["C70.0"]
+
+# Codes explicitly OUT of the phenotype (documented for reviewers)
+icd_excluded_context:
+  - {code: "C71", reason: "non-meningeal (malignant brain); glioma"}
+  - {code: "D33", reason: "non-meningeal benign brain/CNS"}
+  - {code: "D43", reason: "non-meningeal uncertain-behaviour CNS"}
+  - {code: "D36.1", reason: "benign peripheral nerve-sheath tumour"}
+  - {code: "C47",  reason: "malignant peripheral nerve"}
+  - {code: "D48",  reason: "uncertain-behaviour other/unspecified"}
+
+# ---------------------------------------------------------------------
+# 2. OPS procedure codes and attribution (Appendix B)
+#    attribution ∈ {attributable, compatible_secondary, sensitivity_only,
+#                   excluded, exploratory, technique}
+# ---------------------------------------------------------------------
+ops_catalogue_ref: "ops2026syst-meta/Klassifikationsdateien/ops2026syst_kodes.txt"
+ops_codes:
+  - {code: "5-015.3", label_en: "Excision of meningeal tumour without infiltration of intracranial tissue", category: "core_meningeal_resection", attribution: "attributable"}
+  - {code: "5-015.4", label_en: "Excision of meningeal tumour with preparation of infiltrated adjacent tissue", category: "core_meningeal_resection", attribution: "attributable"}
+  - {code: "5-016.4", label_en: "Skull-base with dura, tumour (by fossa .40-.43)", category: "skullbase_dural_resection", attribution: "compatible_secondary"}
+  - {code: "5-016.5", label_en: "Skull-base with dura, other diseased tissue (.50-.53)", category: "skullbase_dural_resection", attribution: "sensitivity_only"}
+  - {code: "5-016.0", label_en: "Skull-base bone, tumour (by fossa .00-.03)", category: "skullbase_bone_resection", attribution: "sensitivity_only"}
+  - {code: "5-016.6", label_en: "Calvaria with dura, tumour", category: "calvarial_dural_resection", attribution: "sensitivity_only"}
+  - {code: "5-015.0", label_en: "Excision of intracerebral tumour, brain-derived", category: "intracerebral_resection", attribution: "excluded"}
+  - {code: "5-015.1", label_en: "Excision of intracerebral tumour, non-brain-derived", category: "intracerebral_resection", attribution: "excluded"}
+  - {code: "5-017.1", label_en: "Resection of intracranial cranial-nerve/ganglion tissue", category: "cranial_nerve_resection", attribution: "excluded"}
+  - {code: "5-032",   label_en: "Approach to lumbar spine/sacrum/coccyx", category: "spinal_approach", attribution: "excluded"}   # only with paired spinal tumour resection + D32.1
+  - {code: "5-033",   label_en: "Approach to thoracic spine", category: "spinal_approach", attribution: "excluded"}
+  - {code: "5-034",   label_en: "Approach to cervical spine", category: "spinal_approach", attribution: "excluded"}
+  - {code: "5-014",   label_en: "Stereotactic operations incl. interstitial brachytherapy", category: "stereotactic_operative", attribution: "exploratory"}
+  - {code: "5-984",   label_en: "Microsurgical technique", category: "technique", attribution: "technique"}
+  - {code: "5-988",   label_en: "Use of a navigation system", category: "technique", attribution: "technique"}
+  - {code: "5-989",   label_en: "Fluorescence-guided method", category: "technique", attribution: "technique"}
+  - {code: "8-925",   label_en: "Intraoperative neurophysiological monitoring", category: "technique", attribution: "technique"}
+  - {code: "8-522",   label_en: "High-voltage / conformal / IMRT", category: "radiotherapy", attribution: "exploratory"}
+  - {code: "8-523.0", label_en: "Single-fraction stereotactic radiosurgery", category: "radiotherapy", attribution: "exploratory"}
+  - {code: "8-523.1", label_en: "Fractionated stereotactic radiotherapy", category: "radiotherapy", attribution: "exploratory"}
+
+# Named OPS sets (values are lists of ops_codes.code)
+ops_sets:
+  primary_operative_phenotype: ["5-015.3", "5-015.4"]
+  compatible_secondary:        ["5-016.4", "5-016.5"]
+  sensitivity_resection:       ["5-016.0", "5-016.6"]
+  excluded_operative:          ["5-015.0", "5-015.1", "5-017.1", "5-032", "5-033", "5-034"]
+  stereotactic_operative:      ["5-014"]
+  technique_adjunct:           ["5-984", "5-988", "5-989", "8-925"]
+  radiotherapy_exploratory:    ["8-522", "8-523.0", "8-523.1"]
+
+# ---------------------------------------------------------------------
+# 3. Treatment measures with fixed numerator / denominator (Protocol 6.3)
+# ---------------------------------------------------------------------
+measures:
+  - id: "attributable_resection_share"
+    numerator_ops_set: "primary_operative_phenotype"
+    denominator_cohort: "primary_epidemiological"      # principal D32.0 episodes
+    denominator_position: "principal"
+    headline: true
+    note: "Numerator from OPS distribution of the principal-D32.0 cohort; report the union where derivable and flag OPS non-additivity."
+  - id: "skullbase_share_operative"
+    numerator_ops_set: "compatible_secondary"
+    denominator_cohort: "primary_operative"            # principal D32.0 AND primary_operative_phenotype
+    denominator_position: "principal"
+    headline: false
+  - id: "neuronavigation_use"
+    numerator_ops: ["5-988"]
+    denominator_cohort: "primary_operative"
+    denominator_position: "principal"
+    headline: false
+  - id: "ionm_use"
+    numerator_ops: ["8-925"]
+    denominator_cohort: "primary_operative"
+    denominator_position: "principal"
+    headline: false
+  - id: "microsurgery_use"
+    numerator_ops: ["5-984"]
+    denominator_cohort: "primary_operative"
+    denominator_position: "principal"
+    headline: false
+  - id: "inpatient_radiotherapy_exposure"
+    numerator_ops_set: "radiotherapy_exploratory"
+    denominator_cohort: "primary_epidemiological"
+    denominator_position: "principal"
+    headline: false
+    exploratory: true
+    note: "EXPLORATORY only. Outpatient RT dominates; do not compare across years or cohorts as total RT."
+
+# ---------------------------------------------------------------------
+# 4. InEK DatenBrowser extraction (Phase 1)
+# ---------------------------------------------------------------------
+inek:
+  source: "InEK DatenBrowser (§21 KHEntgG), datenbrowser.inek.org"
+  years: [2019, 2020, 2021, 2022, 2023, 2024]
+  suppression_threshold: 5
+  diagnosis_positions: ["principal", "principal_or_secondary"]
+  department_codes:
+    neurosurgery: "1700"   # Fachabteilung Neurochirurgie (optional restriction, parallels Kamp 2024)
+
+  # Stratifiers varied one at a time per query (see skill: keep anchor constant)
+  stratifiers:
+    - {id: "summary",              priority: "core",        note: "base query: total N + headline summary"}
+    - {id: "sex",                  priority: "core"}
+    - {id: "age_band",             priority: "core"}
+    - {id: "los_band",             priority: "core"}
+    - {id: "discharge_reason",     priority: "core",        note: "includes in-hospital death; verify death code against §21 discharge-reason list"}
+    - {id: "ops_distribution",     priority: "core",        note: "procedure frequency table; source of resection/technique numerators"}
+    - {id: "drg_distribution",     priority: "secondary",   note: "grouper-version dependent; not cross-year comparable"}
+    - {id: "pccl",                 priority: "secondary",   note: "grouper-version dependent; not cross-year comparable"}
+    - {id: "hospital_bedsize",     priority: "secondary"}
+    - {id: "secondary_dx_complications", priority: "exploratory"}
+    - {id: "hospital_ownership",   priority: "exploratory", note: "demoted in Protocol v2.0; extract only if centralisation sub-study pursued"}
+
+  # Anchor cohorts. Each becomes a set of queries = anchor × applicable stratifier × year.
+  anchors:
+    - id: "A1"
+      label: "Principal D32.0 (primary epidemiological cohort)"
+      icd_cohort: "primary_epidemiological"
+      position: "principal"
+      department: null
+      priority: "core"
+      stratifiers: ["summary", "sex", "age_band", "los_band", "discharge_reason", "ops_distribution", "drg_distribution", "pccl", "hospital_bedsize"]
+    - id: "A2"
+      label: "Principal-or-secondary D32.0 (hospital-contact burden; sensitivity)"
+      icd_cohort: "primary_epidemiological"
+      position: "principal_or_secondary"
+      department: null
+      priority: "secondary"
+      stratifiers: ["summary", "sex", "age_band"]
+    - id: "A3"
+      label: "Principal D32.0 AND primary operative phenotype (5-015.3/.4)"
+      icd_cohort: "primary_epidemiological"
+      position: "principal"
+      ops_filter_set: "primary_operative_phenotype"
+      department: null
+      priority: "core"
+      stratifiers: ["summary", "sex", "age_band", "los_band", "discharge_reason", "ops_distribution"]
+    - id: "A4"
+      label: "Principal D32 broad (D32.0+D32.1+D32.9) sensitivity"
+      icd_cohort: "broad_sensitivity"
+      position: "principal"
+      department: null
+      priority: "secondary"
+      stratifiers: ["summary", "sex", "age_band", "los_band", "discharge_reason", "ops_distribution"]
+    - id: "A5"
+      label: "Principal D32.1 spinal (reported separately)"
+      icd_cohort: "spinal"
+      position: "principal"
+      department: null
+      priority: "secondary"
+      stratifiers: ["summary", "sex", "age_band", "ops_distribution"]
+    - id: "A6"
+      label: "Principal D32.0 AND skull-base dural resection (operative sensitivity)"
+      icd_cohort: "primary_epidemiological"
+      position: "principal"
+      ops_filter_set: "compatible_secondary"
+      department: null
+      priority: "secondary"
+      stratifiers: ["summary", "age_band", "discharge_reason"]
+    - id: "A7"
+      label: "Principal D42.0 (exploratory behaviour cohort — NOT a grade)"
+      icd_cohort: "exploratory_D42"
+      position: "principal"
+      department: null
+      priority: "exploratory"
+      stratifiers: ["summary", "sex", "age_band", "discharge_reason", "ops_distribution"]
+    - id: "A8"
+      label: "Principal C70.0 (exploratory behaviour cohort — NOT a grade)"
+      icd_cohort: "exploratory_C70"
+      position: "principal"
+      department: null
+      priority: "exploratory"
+      stratifiers: ["summary", "sex", "age_band", "discharge_reason", "ops_distribution"]
+    - id: "A9"
+      label: "Principal D32.0 restricted to Neurosurgery (FA 1700) — parallels Kamp 2024"
+      icd_cohort: "primary_epidemiological"
+      position: "principal"
+      department: "neurosurgery"
+      priority: "exploratory"
+      stratifiers: ["summary", "ops_distribution"]
+
+# ---------------------------------------------------------------------
+# 5. Destatis / GBE / Eurostat (Phase 2 — code definitions reused here)
+# ---------------------------------------------------------------------
+destatis:
+  genesis_subject: "23131"
+  three_digit_table: "23131-0001"   # national, 3-digit principal dx, year x sex x age
+  four_digit_series: "tiefgegliederte Diagnosedaten"   # D32.0/.1/.9 where available
+  bundesland_tables: "23131 series (residence vs treatment place — regional analysis only if residence-based)"
+  population_series: "Fortschreibung des Bevoelkerungsstandes (2011-Census-rebased)"
+  icd_three_digit: ["D32", "D42", "C70"]
+  icd_four_digit:  ["D32.0", "D32.1", "D32.9", "D42.0", "C70.0"]
+standardisation:
+  primary_standard: "European Standard Population 2013 (Eurostat)"
+  secondary_standard: "Segi/WHO world standard"
+  interval_method: "exact Poisson 95%"
+
+# ---------------------------------------------------------------------
+# 6. Query-log schema (every executed query recorded for reproducibility)
+# ---------------------------------------------------------------------
+query_log_fields:
+  [query_id, anchor_id, cohort_label, icd_codes, ops_filter, diagnosis_position,
+   department, data_year, stratifier, extract_tab, priority, N_result,
+   suppressed_cells, query_datetime, operator, source_url, notes]
