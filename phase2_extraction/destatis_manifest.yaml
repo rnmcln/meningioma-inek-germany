@@ -1,0 +1,178 @@
+# =====================================================================
+# Meningioma InEK study — Phase 2 Destatis / GBE / Eurostat extraction spec
+# Parallel to phase1_extraction/extraction_manifest.yaml (InEK).
+# Derived from Study Protocol v2.0, Sections 4.2, 4.3, 7.2, 7.6, 7.7 and
+# Appendix C. Provides the long-run epidemiological context, population
+# denominators and standardisation weights, plus the coding-era ledger and
+# cross-source consistency comparison against Phase 1 (InEK).
+#
+# Consumed by build_destatis_grid.py, which validates ICD codes against the
+# local ICD-10-GM catalogue and emits destatis_extraction_grid.csv.
+# =====================================================================
+
+manifest_version: "1.0.0"
+protocol_version: "2.0"
+study_id: "meningioma_inek"
+phase: 2
+generated: "2026-07-10"
+maintainer: "Aaron Lawson McLean"
+notes: >
+  Destatis diagnosis statistics are an annual full census of discharged
+  inpatients (repeated admissions counted separately). Standard GENESIS 23131
+  tables are three-digit (D32, D42, C70); at three digits D32 aggregates cranial,
+  spinal and unspecified sites and must NOT be labelled intracranial meningioma.
+  Four-digit detail (D32.0/.1/.9) comes from the separate "Tiefgegliederte
+  Diagnosedaten" report. The three-digit historical trend and the four-digit
+  cranial series are distinct analyses with distinct estimands and are not
+  spliced into one seamless series.
+
+window:
+  nominal_start: 2005
+  nominal_end: 2024
+  realised: "data-driven; confirm first year of consistent availability per table at extraction"
+
+# ---------------------------------------------------------------------
+# 1. ICD codes (must match Phase 1 phenotype; granularity differs by table)
+# ---------------------------------------------------------------------
+icd_catalogue_ref: "icd10gm2026syst-claml/Klassifikationsdateien/icd10gm2026syst_claml_20250912.xml"
+icd_three_digit:
+  - {code: "D32", label_en: "Benign neoplasm of meninges (all sites)", role: "broad_trend"}
+  - {code: "D42", label_en: "Uncertain-behaviour neoplasm of meninges (all sites)", role: "exploratory_trend"}
+  - {code: "C70", label_en: "Malignant neoplasm of meninges (all sites)", role: "exploratory_trend"}
+icd_four_digit:
+  - {code: "D32.0", label_en: "Benign cranial meningeal neoplasm", role: "primary_cranial"}
+  - {code: "D32.1", label_en: "Benign spinal meningeal neoplasm", role: "spinal"}
+  - {code: "D32.9", label_en: "Benign meningeal neoplasm, unspecified site", role: "unspecified"}
+  - {code: "D42.0", label_en: "Uncertain-behaviour cranial meningeal neoplasm", role: "exploratory"}
+  - {code: "C70.0", label_en: "Malignant cranial meningeal neoplasm", role: "exploratory"}
+
+# ---------------------------------------------------------------------
+# 2. Source tables
+#    granularity ∈ {icd_3digit, icd_4digit, population, standard_pop}
+# ---------------------------------------------------------------------
+destatis:
+  portal: "GENESIS-Online (www-genesis.destatis.de); mirror GBE-Bund (gbe-bund.de)"
+  statistic_diagnoses: "23131 — Diagnosen der Krankenhauspatientinnen und -patienten"
+  statistic_population: "12411 — Fortschreibung des Bevoelkerungsstandes"
+  sources:
+    - id: "KH_DE_3d_basic"
+      genesis_table: "23131-0001"
+      title: "Krankenhauspatienten: Deutschland, Jahre, Hauptdiagnose ICD-10 (1-3-Steller)"
+      granularity: "icd_3digit"
+      dimensions: [year, hauptdiagnose_3steller]
+      role: "national_trend_basic"
+      priority: "core"
+    - id: "KH_DE_3d_agesex"
+      genesis_table: "23131-0002"
+      title: "Krankenhauspatienten: Deutschland, Jahre, Geschlecht, Altersgruppen, Hauptdiagnose ICD-10 (1-3-Steller)"
+      granularity: "icd_3digit"
+      dimensions: [year, sex, age_group, hauptdiagnose_3steller]
+      role: "national_age_sex_structure"
+      priority: "core"
+      note: "provides the age x sex structure needed to age-standardise the 3-digit series"
+    - id: "KH_DE_3d_residence"
+      genesis_table: "23131-0003"
+      title: "Krankenhauspatienten: Deutschland, Jahre, Geschlecht, Altersgruppen, Wohnort des Patienten, Hauptdiagnose ICD-10 (1-3-Steller)"
+      granularity: "icd_3digit"
+      dimensions: [year, sex, age_group, residence, hauptdiagnose_3steller]
+      role: "residence_based_national"
+      priority: "secondary"
+    - id: "KH_BL_3d_agesex"
+      genesis_table: "23131-0011"
+      title: "Krankenhauspatienten: Bundeslaender, Jahre, Geschlecht, Altersgruppen, Hauptdiagnose ICD-10 (1-3-Steller)"
+      granularity: "icd_3digit"
+      dimensions: [year, bundesland, sex, age_group, hauptdiagnose_3steller]
+      role: "regional_treatment_place"
+      priority: "secondary"
+      note: >
+        Behandlungsort (treatment place), not residence. Population-risk regional
+        analysis requires residence-based counts; use this as a centralisation
+        descriptor unless a residence-by-Land table is confirmed at extraction.
+    - id: "KH_4d_tiefgegliedert"
+      genesis_table: null
+      publication: "Tiefgegliederte Diagnosedaten der Krankenhauspatientinnen und -patienten (Statistischer Bericht, serial 5231301)"
+      granularity: "icd_4digit"
+      dimensions: [year, sex, age_group, hauptdiagnose_4steller]
+      role: "four_digit_cranial_series"
+      priority: "core"
+      verify_at_extraction: "first year of consistent 4-digit availability; whether any Land-level 4-digit exists"
+
+  population_sources:
+    - id: "POP_DE_agesex"
+      genesis_table: "12411-0005"
+      title: "Bevoelkerung: Deutschland, Stichtag, Altersjahre (national; sex split via corresponding Geschlecht table)"
+      granularity: "population"
+      dimensions: [reference_date, age_year, sex]
+      role: "national_denominator"
+      priority: "core"
+      verify_at_extraction: "confirm the national sex x single-year-of-age table id; aggregate to 5-year bands"
+    - id: "POP_BL_agesex"
+      genesis_table: "12411-01xx"
+      title: "Bevoelkerung: Bundeslaender, Stichtag, Geschlecht, Altersjahre"
+      granularity: "population"
+      dimensions: [reference_date, bundesland, age_year, sex]
+      role: "regional_denominator"
+      priority: "secondary"
+      verify_at_extraction: "confirm the Bundeslaender sex x age table id"
+
+  standard_populations:
+    - id: "ESP2013"
+      source: "Eurostat — Revision of the European Standard Population (2013)"
+      role: "primary_standardisation_weights"
+      priority: "core"
+      note: "5-year age bands to 95+; primary standard for age-standardised episode rates"
+    - id: "SEGI_WORLD"
+      source: "Segi/WHO World Standard Population"
+      role: "secondary_standardisation_weights"
+      priority: "secondary"
+
+  optional_context:
+    - id: "EUROSTAT_DISCH"
+      source: "Eurostat hlth_co_disch* (hospital discharges by diagnosis, EU)"
+      role: "comparative_european_context"
+      priority: "exploratory"
+
+# ---------------------------------------------------------------------
+# 3. Derived outputs (computed, not extracted)
+# ---------------------------------------------------------------------
+derived_outputs:
+  - {id: "crude_rate", def: "episodes per 100,000 year-end resident population"}
+  - {id: "age_specific_rate", def: "episodes per 100,000 within 5-year band x sex"}
+  - {id: "asr_esp2013", def: "direct age-standardised rate to ESP2013 (primary)"}
+  - {id: "asr_segi", def: "direct age-standardised rate to Segi world (secondary)"}
+  - {id: "poisson_ci", def: "exact Poisson 95% intervals on counts and rates"}
+age_bands: "five-year bands 0-4 ... 90-94, 95+ ; align diagnosis age groups to population bands"
+
+# ---------------------------------------------------------------------
+# 4. Coding-era ledger (Protocol 7.6) — one row per calendar year
+# ---------------------------------------------------------------------
+coding_era_ledger_fields:
+  [year, icd10gm_version, relevant_icd_code_changes, german_coding_guideline_changes_DKR,
+   population_basis, census_rebasing_flag, care_setting_shift_notes, source_url]
+population_basis_note: >
+  Population continuation was rebased on the 2011 Census (affecting data from 2011
+  onward) and is being rebased again on the 2022 Census; annotate the discontinuities
+  on all rate trends and record the basis per year.
+
+# ---------------------------------------------------------------------
+# 5. Cross-source consistency (Protocol 7.7) — NOT validation
+# ---------------------------------------------------------------------
+cross_source_consistency:
+  overlapping_years: [2019, 2020, 2021, 2022, 2023, 2024]
+  compare:
+    - destatis: {source: "KH_DE_3d_basic", code: "D32", position: "principal"}
+      inek: {anchor: "A4", cohort: "broad_sensitivity", position: "principal"}
+    - destatis: {source: "KH_4d_tiefgegliedert", code: "D32.0", position: "principal"}
+      inek: {anchor: "A1", cohort: "primary_epidemiological", position: "principal"}
+  definitional_differences_to_map:
+    [diagnosis_position, transfer_counting, sector_coverage_PSY_reha,
+     annual_revision_status, reporting_year_alignment, suppression_rules]
+  framing: "report observed count ratio as coherence; investigate and describe divergence; do not call it validation"
+
+# ---------------------------------------------------------------------
+# 6. Query-log schema (every extraction recorded for reproducibility)
+# ---------------------------------------------------------------------
+query_log_fields:
+  [task_id, source_id, genesis_table, icd_code, granularity, dimensions_selected,
+   year_range, region_scope, role, priority, N_or_status, retrieved_datetime,
+   operator, source_url, notes]

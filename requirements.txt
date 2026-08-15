@@ -1,0 +1,4 @@
+# Python 3.10+
+matplotlib>=3.7
+openpyxl>=3.1
+PyYAML>=6.0

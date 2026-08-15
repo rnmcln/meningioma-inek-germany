@@ -1,0 +1,5 @@
+definition,ops_codes,episodes_N,resection_share_pct,note
+primary,5-015.3 or 5-015.4,5646,67.5,"principal D32.0 2024; n=8361"
+skullbase_any,5-016.40-.43,115,,"skull-base tumour with dura, by fossa"
+skullbase_without_convexity,5-016.40-.43 without 5-015.3/.4,81,,"added to non-resection group by primary definition"
+extended_union,5-015.3/.4 or 5-016.40-.43,5727,68.5,"sensitivity; 34 carried both; leaves 2634 without any resection code"
